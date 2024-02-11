@@ -45,8 +45,11 @@ class KamerParser(AttributeParser):
 
     def parse(self, attribute) -> Iterator[Match]:
         """Parse the value"""
+        tokens = attribute.tokens
+        if not tokens:
+            tokens = attribute.value.split()
 
-        for count, token in enumerate(attribute.tokens):
+        for count, token in enumerate(tokens):
             if token.isdigit():
                 pattern_list: list[tuple[str, re.Pattern]] = [
                     ("slaapkamer", re.compile(r"slaap", re.IGNORECASE)),
@@ -57,14 +60,19 @@ class KamerParser(AttributeParser):
 
                 for key, pattern in pattern_list:
                     if terms_in_tokens(
+                        tokens=tokens,
                         terms=pattern,
                         index=count,
                         distance=1,
                         before=False,
-                    ) or terms_in_text(text=attribute.key, terms=pattern):
+                    ) or (
+                        attribute.key
+                        and terms_in_text(text=attribute.key, terms=pattern)
+                    ):
                         yield self.create_match(
                             value=int(token),
                             key=key,
+                            attribute=attribute,
                             merger=return_highest,
                         )
                         continue
@@ -85,7 +93,7 @@ class HuurParser(AttributeParser):
             if term in attribute.value.lower():
                 return True
 
-            if self.key and term in attribute.key.lower():
+            if attribute.key and term in attribute.key.lower():
                 return True
 
         return False
@@ -95,19 +103,22 @@ class HuurParser(AttributeParser):
 
         return self.test_key_value(attribute)
 
-    def tokenizer(self) -> list[str]:
+    @staticmethod
+    def tokenizer(value: str) -> list[str]:
         """Tokenize the value"""
         # if a € is attached to a digit add a space in between
-        value = re.sub(r"€(\d)", r"€ \1", self.value)
-        return word_tokenize(value)
+        clean_value = re.sub(r"€(\d)", r"€ \1", value)
+        return word_tokenize(clean_value)
 
     def parse(self, attribute: Attribute) -> Iterator[Match]:
         """Parse the value"""
-        tokens = self.tokenize(attribute.value)
+        tokens = self.tokenizer(attribute.value)
 
         for token in tokens:
             if amount := money_repr(token):
-                yield self.create_match(value=amount, key=self.match_key)
+                yield self.create_match(
+                    value=amount, key=self.match_key, attribute=attribute
+                )
 
 
 class WaarborgParser(HuurParser):
@@ -148,7 +159,8 @@ def merge_oppervlakte(one, other):
 class OppervlakteParser(AttributeParser):
     name = "Oppervlakte Parser"
 
-    def test_key(self) -> bool:
+    @staticmethod
+    def test_key(key: str) -> bool:
         """Test the key"""
 
         terms = [
@@ -157,22 +169,21 @@ class OppervlakteParser(AttributeParser):
             "woon",
             "leef",
         ]
-        if self.key:
-            if not any([t in self.key.lower() for t in terms]):
+        if key:
+            if not any([t in key.lower() for t in terms]):
                 return False
 
         return True
 
-    def test_value(self) -> bool:
+    @staticmethod
+    def test_value(value: str) -> bool:
         """Test the value"""
 
         terms = [
             "m2",
             "m²",
         ]
-        if not any([t in self.value.lower() for t in terms]):
-            if self.key and self.test_key():
-                return True
+        if not any([t in value.lower() for t in terms]):
             return False
 
         return True
@@ -180,9 +191,12 @@ class OppervlakteParser(AttributeParser):
     def test_attribute(self, attribute: Attribute) -> bool:
         """Test if the attribute can be parsed by this parser"""
 
-        return self.test_value()
+        if attribute.key and self.test_key(attribute.key):
+            return True
+        return self.test_value(attribute.value)
 
-    def tokenizer(self, text: str) -> list[str]:
+    @staticmethod
+    def tokenizer(text: str) -> list[str]:
         """Tokenize the value"""
         text = text.replace("\u00b2", "2")
         tokens = word_tokenize(text)
@@ -203,10 +217,12 @@ class OppervlakteParser(AttributeParser):
 
     def parse(self, attribute: Attribute) -> Iterator[Match]:
         """Parse the value"""
+        tokens = self.tokenizer(attribute.value)
 
-        for count, token in enumerate(self.tokens):
+        for count, token in enumerate(tokens):
             if token.isdigit():
-                if self.terms_in_tokens(
+                if terms_in_tokens(
+                    tokens=tokens,
                     terms=["m2", "m²"],
                     index=count,
                     distance=2,
@@ -215,6 +231,7 @@ class OppervlakteParser(AttributeParser):
                     yield self.create_match(
                         value=int(token),
                         key="oppervlakte",
+                        attribute=attribute,
                         merger=merge_oppervlakte,
                     )
                     continue

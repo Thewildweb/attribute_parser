@@ -8,21 +8,16 @@ from .example_parsers import KamerParser, HuurParser, OppervlakteParser, Waarbor
 def test_parser():
     """Basic test for the KamerParser"""
 
-    Attribute(
+    attribute = Attribute(
         key="Kamers",
         value="3 kamers",
-    )
-
-    parser = KamerParser(
-        attribute=Attribute(
-            key="Kamers",
-            value="3 kamers",
-        ),
         tokens=["3", "kamers"],
     )
 
-    assert parser.test_attribute()
-    for match in parser.parse():
+    parser = KamerParser()
+
+    assert parser.test_attribute(attribute)
+    for match in parser.parse(attribute):
         assert match.key == "kamer"
         assert match.value == 3
 
@@ -34,13 +29,10 @@ def test_parser_mulitple_values():
         value="3 kamers, 2 slaapkamers",
     )
 
-    parser = KamerParser(
-        attribute=attribute,
-        tokens=attribute.value.split(),
-    )
+    parser = KamerParser()
 
-    assert parser.test_attribute()
-    matches = list(parser.parse())
+    assert parser.test_attribute(attribute)
+    matches = list(parser.parse(attribute))
     assert len(matches) == 2
 
     assert matches[0].key == "kamer"
@@ -54,12 +46,9 @@ def test_parser_that_fails_test():
     """Test for the Parser that fails the test."""
     attribute = Attribute(key="Huur", value="€ 1.200 /mnd")
 
-    parser = KamerParser(
-        attribute=attribute,
-        tokens=attribute.value.split(),
-    )
+    parser = KamerParser()
 
-    assert not parser.test_attribute()
+    assert not parser.test_attribute(attribute)
 
 
 def test_huurprijs_parser():
@@ -69,23 +58,15 @@ def test_huurprijs_parser():
         key="Huurprijs", value="€ 2.650 per maand (servicekosten onbekend)"
     )
 
-    parser = HuurParser(
-        attribute=huur_attribute_1,
-        tokens=huur_attribute_1.value.split(),
-    )
+    parser = HuurParser()
 
-    assert parser.test_attribute()
-    for match in parser.parse():
+    assert parser.test_attribute(huur_attribute_1)
+    for match in parser.parse(huur_attribute_1):
         assert match.key == "huur"
         assert match.value == 1200.0
 
-    parser = HuurParser(
-        attribute=huur_attribute_2,
-        tokens=huur_attribute_2.value.split(),
-    )
-
-    assert parser.test_attribute()
-    for match in parser.parse():
+    assert parser.test_attribute(huur_attribute_2)
+    for match in parser.parse(huur_attribute_2):
         assert match.key == "huur"
         assert match.value == 2650.0
 
@@ -93,13 +74,10 @@ def test_huurprijs_parser():
 def test_waarborg_parser():
     waarborg_attribute = Attribute(key="Waarborgsom", value="€ 2.650")
 
-    parser = WaarborgParser(
-        attribute=waarborg_attribute,
-        tokens=waarborg_attribute.value.split(),
-    )
+    parser = WaarborgParser()
 
-    assert parser.test_attribute()
-    for match in parser.parse():
+    assert parser.test_attribute(waarborg_attribute)
+    for match in parser.parse(waarborg_attribute):
         assert match.key == "borg"
         assert match.value == 2650.0
 
@@ -108,37 +86,23 @@ def test_with_strange_values():
     """Test with strange values like: "value": "75 m\u00b2" """
     attribute = Attribute(key="Woonoppervlakte", value="75 m\u00b2")
 
-    parser = OppervlakteParser(
-        attribute=attribute,
-        tokens=attribute.value.split(),
-    )
+    parser = OppervlakteParser()
 
-    assert parser.test_attribute()
-    for match in parser.parse():
+    assert parser.test_attribute(attribute)
+    for match in parser.parse(attribute):
         assert match.key == "oppervlakte"
         assert match.value == 75
 
     attribute_2 = Attribute(value="75m2")
-
-    parser = OppervlakteParser(
-        attribute=attribute_2,
-        tokens=attribute_2.value.split(),
-    )
-
-    assert parser.test_attribute()
-    for match in parser.parse():
+    assert parser.test_attribute(attribute_2)
+    for match in parser.parse(attribute_2):
         assert match.key == "oppervlakte"
         assert match.value == 75
 
     attribute_3 = Attribute(key="Woonoppervlakte", value="75 m2")
 
-    parser = OppervlakteParser(
-        attribute=attribute_3,
-        tokens=attribute_3.value.split(),
-    )
-
-    assert parser.test_attribute()
-    for match in parser.parse():
+    assert parser.test_attribute(attribute_3)
+    for match in parser.parse(attribute_3):
         assert match.key == "oppervlakte"
         assert match.value == 75
 
@@ -159,7 +123,7 @@ def test_parsing_test():
         Attribute(key="Soort", value="Appartement"),
     ]
 
-    parsers = [KamerParser, HuurParser, OppervlakteParser, WaarborgParser]
+    parsers = [KamerParser(), HuurParser(), OppervlakteParser(), WaarborgParser()]
 
     parsed_attributes = parse_attributes(parsers=parsers, attributes=attributes)
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any
 from collections.abc import Iterator, Callable
 from dataclasses import dataclass
@@ -30,7 +32,7 @@ class Match:
         value: int | float | str,
         key: str,
         attribute: Attribute,
-        merger: Callable[["Match", "Match"], "Match"] | None = None,
+        merger: Callable[[Match, Match], Match] | None = None,
     ) -> None:
         self.value = value
         self.key = key
@@ -43,7 +45,7 @@ class Match:
     def __str__(self) -> str:
         return self.__repr__()
 
-    def merge(self, other: "Match") -> "Match" | None:
+    def merge(self, other: Match) -> Match | None:
         """When two matches with the same keyword are found, this method
         decides what to do with them. By default it replaces the old match
         with the new one.
@@ -61,27 +63,21 @@ class AttributeParser(ABC):
 
     name: str = "AttributeParser"
 
-    def __init__(
-        self,
-        attribute: Attribute,
-    ) -> None:
-        self.value = html.unescape(attribute.value)
-        self.key = html.unescape(attribute.key) if attribute.key else None
-
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.value})"
+        return self.__class__.__name__
 
     def create_match(
         self,
         value: Any,
         key: str,
+        attribute: Attribute,
         merger: Callable[[Match, Match], Match] | None = None,
     ) -> Match:
         """Create a match"""
         return Match(
             value=value,
             key=key,
-            attribute=Attribute(value=self.value, key=self.key),
+            attribute=attribute,
             merger=merger,
         )
 
