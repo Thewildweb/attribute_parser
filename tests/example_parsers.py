@@ -7,8 +7,8 @@ from nltk.tokenize import word_tokenize  # type: ignore
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.attribute_parser import AttributeParser, Match, Attribute
-from src.funcs import money_repr, terms_in_tokens, terms_in_text
+from src.attributeparser.attribute_parser import AttributeParser, Match, Attribute
+from src.attributeparser.funcs import money_repr, terms_in_tokens, terms_in_text
 
 
 def return_highest(self, other):

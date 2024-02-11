@@ -1,7 +1,7 @@
 import pytest
 
-from src.attribute_parser import Attribute
-from src.parse_attribute import parse_attributes
+from src.attributeparser.attribute_parser import Attribute
+from src.attributeparser.parse_attribute import parse_attributes
 from .example_parsers import KamerParser, HuurParser, OppervlakteParser, WaarborgParser
 
 
