@@ -1,4 +1,5 @@
 """Some helper functions"""
+
 import re
 from collections.abc import Iterator
 
@@ -65,7 +66,7 @@ def terms_in_text(
             if term in text:
                 return True
             continue
-        if term.match(text):
+        if term.search(text):
             return True
 
     return False
